@@ -1,0 +1,50 @@
+62114.sh - Documentation - Daniel Penchev SI 62114
+
+ - Main purpose of the script - for every word in text.txt, which isn't contained in dic.txt, the script should display a line with the following format: <word from text.txt>:<levenstein's distance>:<word from dic.txt>
+
+Where:
+<word from text.txt> is the max sequence of letters(а-яА-Яa-zA-Z), which is contained in text.txt, all upper letters are made lower
+
+<levenstein's distance> is the minimal levenstein's distance between a word from text.txt and a word from dic.txt
+
+<word from dic.txt> is a word from dic.txt, to which there is a min distance from the word from text.txt
+
+
+The output every word from text.txt, which isnt contained in dic.txt, should be found exacly once.
+
+ - Files needed for the script to run properly:
+text.txt - contains a text with all kinds of symbols
+dic.txt - contains 1 word per line (only small letters)
+
+Both of them are in the 62114 directory, in which the script is also to be found. Because of the lack of description in the "problem.txt" or in moodle, i've  assumed that the script wont have any arguments, and that if the user wants to use other files, he has to open the code and change the paths to the files.
+!!! Problem found: when the users is currently in other directory than 62114 and tries to use this script, the program will exit with 1, because the script works with the relative paths of the text files.So the user can use the script when he is currently in the directory, where the files are.( in this case 62114 directory)
+
+
+ - Currently the script only works with latin and cyrilic alphabet!!!
+
+
+ - How the script works :
+ 
+When the user executes the script, the first thing the script does is to assign variables ( "txtFile" and "dictionary" ) to the paths of the files( for convenience because the script uses them in serveral places ).Then it checks whether they exist and are readable and there are 2 options:
+        1) if one of them doesnt exist or isnt readable the program sends an appropriate error message to stderr and exits the program with 1
+        2) if everything is ok then the program continues
+Then the script uses a for cycle to loop through every word from the "text.txt" file. One of the syntaxes of the "for cycle" is "for i [in words]" where "words" is basically a list of words separated by a delimiter (if i am not mistaken by default it is [[:space:]]). On every cycle i is assigned to the next word in the list "words". But how does the script extract and separate the different words from "text.txt" file. The for-cycle's argument - words - is replaces by a nested command which initially reads the file "test.txt", makes all upper case letters to lower case, then every non-alphabetical symbols will be replaced by new line symbol ( !!! Problem when the word is in this format word-word which basically  one word for instance: министър-председател !!! ). Finally the empty lines are removed, then non-empty lines are sorted and the duplicates are removed and the stdout is passed to "words" argument.
+
+On every cycle the script compares the value of i with the words from "dic.txt" file one by one, in order to find the min levestein's distance.( with the external command tre-agrep, for more information about the choices of options i've used, see the External Resources section) There could be several matched , so we pick the first one. And a variable "result" is assigned to the output. The value of "result" will be in the format <levenstain's distance>:<word from "dic.txt">
+First we want to check whether the the value of i is matching 100%  the best matching word. (In other words to be exacly the same word). If so then the we ignore the value and we continue with the next cycle. If not then we print first the value of the variable i , ":", then the value of result.
+
+Done.
+
+
+
+
+ - External sources of information or resources
+The Linux Command Line - https://learn.fmi.uni-sofia.bg/pluginfile.php/195082/mod_resource/content/1/TLCL-19.01.pdf
+tre-agrep command - because Ubuntu distribution of Linux doesnt supply us with that useful command, i had to get it from external sources( through the command "apt install tre-agrep", couldn't find the source ). 
+ Used options: 
+     -B - outputs the best matching record ( with the lowest cost)
+     -s - this option adds the cost to the input (by default replace, delete,add a symbol is 1)
+     -w - match only whole words, if this options isnt set, then basically it could match anything, even 7 spaces
+     -E - max error count - in the description of the task in "problem.txt" it's wriiten than the range of errors can be max 99
+
+
