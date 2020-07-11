@@ -114,12 +114,12 @@ void UpdateFile(const int fd,const struct Segment content[],const int size)
 	lseek(fd,0,SEEK_SET);
 	for(int i=0;i<size;i++)
 	{
-        //Writing the type of the segment
-        write(fd,&(content[i].type),1);
-        //Writing the bit section of the segment
-        write(fd,&(content[i].arguments),BITS_META_INFO_LENGTH);
-        //Writing the value section of the segment
-        write(fd,&(content[i].info),VALUE_INFO_LENGTH);
+       		//Writing the type of the segment
+        	write(fd,&(content[i].type),1);
+        	//Writing the bit section of the segment
+        	write(fd,&(content[i].arguments),BITS_META_INFO_LENGTH);
+        	//Writing the value section of the segment
+        	write(fd,&(content[i].info),VALUE_INFO_LENGTH);
 	}
 }
 
