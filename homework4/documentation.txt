@@ -1,0 +1,34 @@
+Documentation Homework 4 Operating Systems      Daniel Penchev 62114
+
+Purpose of the program: Its a client-server program using shared memory to implement the communication between the server and the
+clients. Only 1 client can communicate with the server at a particular time, that means that the other should wait in a queue. The client
+sends the server a character, which uniquely identifies a bank account. The bank accounts are stored in a file(8 accounts), which can be only
+accessed from the server(uint32_t variables only, no characters, therefore the accounts are sorted ). After the server finds the particular account, sends the client its current balance. (If not found then the server sends an empty string, which is interpreted by the client as an
+error).The next step is the transaction. The client sends a number from -32,768 to +32,768 to the server, the server checks its legitimate, 
+and if it's correct then proceeds to change the current balance of the account. After the successful completion of the transaction, then the server sends the new current balance.
+
+First requirement: There should be only 1 client communicating with the server at a particular time - The program copes with that problem via
+semaphore - "clients". The idea is simple. A client enters "The chat room", if its empty (the counter of the semaphore is 1), else waits in the
+queue till the room is empty and he is the first person, who entered the queue. Because of philosophical and logical reasons, this semaphore is
+created in the server code, because without the server running there is no reason the semaphore to exist. If the client appears, and the server is down, then the client will exit with an error code. 
+
+Second hidden requirement: Only one can write/read from the shared memory. This problem is tackled via 2 mutexes - "mutex" and "answer". 
+"answer" signalizes the client that a message is waiting for him and "mutex" that the server should read the message. There could be a better 
+the solution maybe, but haven't found it yet.
+
+Third hidden requirement: What happens when the client during the session crashes/disconnects... To fulfill that requirement we should handle the SIGINT and SIGTERM signals. We, unfortunately, cannot cope with SIGKILL, maybe one day. When the signal is sent, the client closes all connections with the semaphores and the shared memory. If the signal is for the server, then not only closes the connections but 
+also destroys them.
+
+Fourth hidden requirement: There can only be 1 server working at a time. In the beginning, when the server initializes its variables, it creates 
+a new shared segment with flags O_CREAT|O_EXCL, so that if it already exists then the program will exit.
+
+Fifth requirement: If the client crashes, or just finishes its task and disconnects from the server, the server must continue working normally.
+
+Sixth hidden requirement: When the client is taking too long, then he should be kicked from the session, and the server continues with the next client - this is done via alarm() function. After 16 seconds if the client hasn't sent a message when it receives a signal, which sends "special message" to the server to inform him for the timeout and also closes all resources. To change the timeout time, the user should open the client.c and find alarm(16); 
+
+The program consists of 3 files: 2 source files - server.c, clients.c and a header file - comm.h
+In comm.h are declared constants like the name of the semaphores, the function sigEndHandler to handle SIGINT and SIGTERM and others.
+
+Note: The program uses System V shared memory and POSIX semaphores - so in the makefile, the options -lrt and -lpthread are added.
+Note: There is a better implementation of the server - to be a daemon process so that the terminal could be used in order not to be blocked.
+Note: This is an interactive program. The signal handling is needed to free the resources. Otherwise after the server crashes/kill itself the shared memory will remain and you cannot activate the server - you should restart it.
