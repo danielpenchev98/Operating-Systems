@@ -1,0 +1,54 @@
+Documentation Homework 3 Operating Systems      Daniel Penchev 62114
+
+Note: "-h" option for getting info about the instrument requires full screen + less command for the text to be formatted. Also the Makefile has been modified!!!
+
+Task - We are must configure a configurational file of a Bluetooth device, consisting of several segments, each could be from different type - text, numeric or byte. Each segment consists of 64 bytes. The first 1 byte is used to determine the type of the segment, then the next 7 bytes are used to signal whether an argument is active or not. The rest -56 bytes- is used for the value section of the segment. In the text segment, the first 3x16 bytes in the value section are reserved for the values of the arguments (only 3 of them have 16 bytes each) and 8 bytes are trash. In the numeric segment, each value of an arguments consists of 4 bytes - 14 values overall. In the byte segment, every value of an argument consists of 1 byte - 56 values overall.
+
+The main task is to create an instrument to work with different types of conf files( the program should be easy to modify). The instrument offers several options to modify the file: -s and -S to set values of an argument(for more info use -h for help to see their description), -g and -G to get the value of a specific argument, -l and -L to get the lists of all arguments (activated or not) and if there are additional arguments to display also their value, -b to (de)activate a parameter, -c to create a new configurational file, -h to see more specific description of the options and how to add/delete parameters and change the configuration on which the instrument works.
+
+How does the instrument work? - First, the program checks the number of arguments. If there is only 1 argument and it isn't "-h" then the program exits with an error message. If not then checks if the first argument is an existing regular file, if it is and the second parameter is "-c" then the program exits with an error message. If it's not "-c" creates a new configurational file according to the arguments left, the program expects pairs of [number] [type of segment], where the type of segment is a letter, t - for text segment, n - for a numeric segment and b - for byte segment.
+If the file already exists and the -c option is chosen then the program exits with an error message. If another option is chosen, then first the program uploads the content of the file in a special array of structures-segments where the user will modify the data, and when the operation is finished will update the file - efficient because if the program crashes, then the real content won't be harmed at all. Then according to the chosen option reacts differently.
+
+How does -s/-S work? - Well, the program assumes the arguments, placed after the option, are the [parameter name] and the wanted [value] to be set. If the option is "-s" the program activates the [parameter name] and then tries to set the value(SetBit function). To determine the parameter name the program has a special function called "GetArgPosition" which returns a special struct PositionSegNum, which includes the number of segments the parameter is assigned to, the position of its activation bit and the position of its value in the value section of the segment. We use that struct to help the program do the wanted changes in the correct place. Then the real process of value set begins. The program first checks the type of segment to which the parameter is assigned, then according to the type places the "cursor" to the right place and changes the bits. If the parameter is used in a numeric segment then we must be careful which endian we use. The program, fortunately, is endian independent - works only with char variables - and uses functions like ConvertDecimalToHex to convert a number to hex using little-endian format. Note: the option works only with 1 parameter according to the "problem.txt".
+
+Note: in order not to have redundant info - all parameters except -h, -c use the struct PositionSegNum
+
+How does -g/-G work? - Option "-g" requires the parameter to be activated in order for the user to receive its value(GetBit function). The function PrintValue is called and according to the struct and the type of segment treats the bytes of the value of the argument differently - if it's used in the numeric segment then the program calls ConvertHexToDecimal, assuming that the file uploaded by the program is in little endian. Note: the default values of arguments of text segments is an empty string, while the value of the others is 0.
+
+How does -l/-L work? - There are 2 variants of -l and -L. 1) no following arguments after the option, then the program prints the names of the parameters, ignoring the activation bit ( if -l is used then activation bit is taken into account). The algorithm uses the previous defined PrintValue. 2) if there are following parameters if the option is -l then for each of the following names of parameters, whose bit is activated, prints its value( for -L the bit is ignored).  
+
+How does -c work?- The arguments following the option are in the format [number1] [type1].....[number2] [typeN], where the numberN is the position of the segment in the sequence of the segments and typeN is the type of the segment. If there is a hole in the sequence the program terminates without creating a new conf file. It doesn't matter if number1>numberN , what matters is if there are holes and if there are duplicate numbers. The final product is a file, containing the wanted number and type of segments - the type byte is set - and the other 63 bytes of each segment are with value 0.
+
+How does -b work? The expected arguments, following the option, are [param Name] and [bool value].Using bitwise operations the bit is set to the value - SetBit function
+
+It none of these options are chosen then the program exits with an error message.
+
+Content of Constants.h - for every parameter there are 3 constants - number of the segment which is assigned to, position of its bit and the position of its value on the value section of the segment - mapping.
+                      - paramName - array containing the names of the parameters
+                      - paramLimits - array containing the regex of the parameters
+                      - also, there are constants for the size of the segment, the size of the sections of the segments, and the number of segments supported for that configuration
+                      - typeOfSegments - array containing the exact sequence of types of segments
+                      - other constants.
+
+Content of HelpFunctions.h
+                      - struct Pair - for sorting the pairs of [number of segment] [type of segment] - "-b" option
+                      - HelpFunction() - printing the custom man page of the instrument.
+                      - ConvertDecimalToHex() and ConvertHexToDecimal() to cope with the endianess
+                      - Regex() - function for checking if a specific value passes the regex
+                      - CheckIfNumber() - checking if a string consists of numbers.
+
+Content of FileOperations.h
+                      - CreateConfigFile() - function which creates a new conf file with the wanted configuration
+                      - UploadFile() - function which uploads the content of the file in RAM - via struct Segments
+                      - UpdateFile - function which trasfers the updated data to the file
+
+Content of ContentManipulation.h
+                      - struct PositionSegNum - is used to save vital information for the program to find the right place to modify or to get data
+                      - struct Segment - the core data structure of the program - the whole content of the file is save in an array consisting of those structures.
+                      - GetArgPosition() - function which map the name of the parameter to its attributes, like in which segment it is used or the position of its activation bit and so on.
+                      - SetBit() - (De)Activating the bit of the chosen parameter
+                      - GetBit() - getting the value of the bit of the chosen parameter
+                      - SetValue() - setting the value of the chosen parameter
+                      - PrintValue() - getting the value of the chosen parameter.
+
+How to change the current file configuration, which the instrument is working on? - Look the help function via the "-h" option.     
