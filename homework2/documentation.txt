@@ -1,0 +1,59 @@
+                          Homework2 documentation
+                            Daniel Penchev 62114
+
+- The user should call the script with exacly 4 arguments:
+      1 - timetable.log file
+      2 - eeg.xml file
+      3 - larynx.wav
+      4 - the target directory
+- If the arguments are less or more than 4 then the program will exit with status 1
+
+- Then the program checks the files if they actually exist and are readable and if the directory exist and is writable
+      * If the timetable.log isnt readable( also exist) then exit status 2
+      * If the eeg.xml isnt readable( also exist) then exit status 3
+      * If the larynx.wav isnt readable( also exist) then exit status 4
+      * If the timetable.log isnt writable( also exist) then exit status 5
+
+- Before the script is called the user can create a variable EEG_TZ with the wanted timezone, otherwise the default timezone will be UTC.
+
+- Then there is a section "Functions" where the function calcTimeSec() is declared. Basically it transforms '00:09:12' into time in seconds.
+      * If the number of arguments is different than 1 then the program will have exit status 6
+
+- After that section the program gets the StartRecordingDate, StartRecordingTime, RecordLength and SamplingRate from the eeg.xml file and assign them to the read-only variable extract. If by the way there are duplicates of the same of <tag>  (e.g Samplingrate, StartingTime) then the program exits with exit status 7
+
+- The next thing the program does is to get the epoch time in seconds througth the values of StartingDate and StartingTime, with accuracy about 6 digits after the floating point. Note: the date must be in the format yyyy-mm-dd in order the "date" function to operate normal.
+
+- The program extracts the length of the EEG , SamplingRate from the "extract" variable and computes additionally with those values the end of the EEG.
+
+- Because we are working with double then we must use command "bc" in order the do mathematical operations.
+
+- The program uses "soxi" instead of "ffmpeg" command ( which i additionally installed in order to completed the homework ) because, the output is more accurate.
+
+- lengthWav - is basically the total length of the larynx.wav
+- wavBegin - is the epoch time in seconds , which is the beginning of the larynx.wav ( its value resides in the eeg file - the third column of the row of the stimulus called "beep")
+- wavEnd - end of the larynx.wav - the epoch time in seconds
+
+- Because of the possibility that the timetable.log may contain records of stimulus with the same name, the program checks the content of the file and notifies the user with a warning message for their existance
+
+- legitStim - contains all the rows with records, which fulfill the following requirements:
+            * the record must be greater or equal than 0.2
+            * beginning of the record shouldnt be less than the beginning of both the eeg.xml and larynx.wav files
+            * end of the record shouldnt be greater then the endtime of both the eeg.xml and larynx.wav files
+- If not then an error with be printed on the terminal - no files will be created for that particular stimul
+(Note : if the stimul is called "Error:" then the program will create false results)
+
+- Because the program needs to change the value of IFS, the variable "temp" will preserve the value of IFS
+
+- The program then iterates through the value of the variable "legitStim",. The problem is that every row represents a record which containes multiple spaces - solution : change the value of IFS to '\n' . On every iteration the program checks if the current row is one of the "illegal" records.
+If it is legit, then the program gets the starting and  end time of the stimulus, which we use to compute the length of the record. In order to compute the tick we need to get from the eeg.xml file we calculate - ( the length of the record multiplied by the SamplingRate in Hz). The result is a double value, so the program converts it to the biggest whole number less or equal then the current one. In order to get the number ticks we must skip from the eeg.xml file so that we can extract the ticks we need, the program calculates the difference between the starting time of the current record and the starting time of the EEG. The output is multiplied by the SamplingRate. Consequently we add +1 to the result of the previous operation in order to get the first tick we actually need.
+
+- How do we extract a part of a record from the wav file? - with sox command. Basically sox is command for audio manipulation, which has many features. In order to achieve the wanted result - to get wav files with records of the wav file we must use the following syntax : sox <wav file to manipulate> <the file with the record of the wav file we create> trim <starting time of the part of the wav file we want to extract (not epoch time)> <length of the wanted part to extract>.After several tests i've made with the commands ffmpeg and sox, my conclusion is that sox significantly outperforms  ffmpeg - about 2 times faster.
+
+- How do we extract the ticks from the eeg.xml file - first we get all rows beginning with "<tick>, then we get all records(rows) after the last record we want to skip, then we get the first 'n' records and save them in a file names after the name of the stimulus we are currently working with.
+
+- At the end IFS gets its old value
+
+- External sources:
+     - additional commands:
+        * sox - program for audio file manipulation
+     - StackOverFlow - the advantages of sox over ffmpeg
